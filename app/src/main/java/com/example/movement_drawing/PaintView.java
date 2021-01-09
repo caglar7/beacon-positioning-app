@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -95,8 +96,6 @@ public class PaintView extends View {
     {
         // set direction
         // initially there is no user input
-        horizontalDir = 1;
-        verticalDir = 0;
 
         // update points, paths
         pointX += (horizontalDir) * incrementPerMeter;
@@ -107,9 +106,19 @@ public class PaintView extends View {
         postInvalidate();
     }
 
+    public void changeDirection(int hDir, int vDir)
+    {
+        // update direction
+        horizontalDir = hDir;
+        verticalDir = vDir;
+    }
+}
 
-    // TOUCH FOR TESTING IF IT WORKS
-    // DELETE LATER
+
+
+// FOR SOME INFO
+// TOUCH FOR TESTING IF IT WORKS
+// DELETE LATER
     /*
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -134,4 +143,3 @@ public class PaintView extends View {
         return false;
     }
      */
-}

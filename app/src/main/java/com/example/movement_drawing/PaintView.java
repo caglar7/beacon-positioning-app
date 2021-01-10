@@ -40,6 +40,9 @@ public class PaintView extends View {
     private int horizontalDir = 1;
     private int verticalDir = 0;
 
+    // Colors
+    private Color colorBackground;
+
     private boolean checkStart = false;
 
     // constructor of the class here
@@ -47,18 +50,21 @@ public class PaintView extends View {
         super(context);
         checkStart = true;
 
+        // brush to draw path
         brush.setAntiAlias(true);
-        brush.setColor(Color.GRAY);
+        brush.setColor(getResources().getColor(R.color.colorPath));
         brush.setStyle(Paint.Style.STROKE);
         brush.setStrokeJoin(Paint.Join.ROUND);
         brush.setStrokeWidth(20f);
 
+        // brush to draw user character
         brushIcon.setAntiAlias(true);
-        brushIcon.setColor(Color.BLUE);
+        brushIcon.setColor(getResources().getColor(R.color.colorUserIcon));
         brushIcon.setStyle(Paint.Style.STROKE);
         brushIcon.setStrokeJoin(Paint.Join.ROUND);
         brushIcon.setStrokeWidth(50f);
 
+        // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
         // run method every second
@@ -76,6 +82,8 @@ public class PaintView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        // canvas background color
+        canvas.drawColor(getResources().getColor(R.color.colorCanvasBackground));
 
         // put pointer on the center at first
         // init increment per meter in terms of screen coordinates
@@ -92,23 +100,19 @@ public class PaintView extends View {
         canvas.drawCircle(pointX, pointY, 10, brushIcon);
     }
 
+    // update points, paths and refresh canvas
     private void updateTheDrawing()
     {
-        // set direction
-        // initially there is no user input
-
-        // update points, paths
         pointX += (horizontalDir) * incrementPerMeter;
         pointY += (-verticalDir) * incrementPerMeter;
         path.lineTo(pointX, pointY);
 
-        // refresh canvas
         postInvalidate();
     }
 
+    // update direction from main
     public void changeDirection(int hDir, int vDir)
     {
-        // update direction
         horizontalDir = hDir;
         verticalDir = vDir;
     }

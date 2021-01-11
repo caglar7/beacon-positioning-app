@@ -54,6 +54,11 @@ public class PaintView extends View {
     // FOR DIRECTION ILLUSTRATION
     private Drawable directionImage;
     private float imageRange;
+    private double hypo1, hypo2;
+    private float arrowPoint_x1;
+    private float arrowPoint_y1;
+    private float arrowPoint_x2;
+    private float arrowPoint_y2;
 
     // Colors
     private Color colorBackground;
@@ -81,7 +86,7 @@ public class PaintView extends View {
         brushIcon.setStrokeCap(Paint.Cap.ROUND);
         brushIcon.setStrokeWidth(50f);
 
-        //
+        // temp arrow image brush
         brushArrow.setAntiAlias(true);
         brushArrow.setColor(getResources().getColor(R.color.colorUserIcon));
         brushArrow.setStyle(Paint.Style.STROKE);
@@ -97,6 +102,8 @@ public class PaintView extends View {
         directionImage.setColorFilter(new PorterDuffColorFilter(
                 getResources().getColor(R.color.colorDirectionArrow),PorterDuff.Mode.MULTIPLY));
         imageRange = 7*iconRadius;
+        hypo1 = Math.sqrt(2*(imageRange/2)*(imageRange/2));
+        hypo2 = Math.sqrt(2*imageRange*imageRange);
 
         // run method every second
         updateTimer = new Timer();
@@ -127,12 +134,91 @@ public class PaintView extends View {
             path.moveTo(pointX, pointY);
         }
 
+        // craw circle and path
         canvas.drawPath(path, brush);
         canvas.drawCircle(pointX, pointY, iconRadius, brushIcon);
 
-        directionImage.setBounds( (int)(pointX+35), (int)(pointY-35), (int)(pointX+105), (int)(pointY+35));
-        directionImage.draw(canvas);
 
+
+        // assign boundary points for arrow direction image
+        assignBoundPoints(horizontalDir, verticalDir);
+
+        directionImage.setBounds((int)arrowPoint_x1, (int)arrowPoint_y1, (int)arrowPoint_x2, (int)arrowPoint_y2);
+        directionImage.draw(canvas);
+    }
+
+    // this assigns 2 boundary points for direction image
+    // boundary points are initialized above
+    private void assignBoundPoints(int hDir, int vDir) {
+        // ASSIGN TOP LEFT BOUNDARY
+        // arrowPointX1 and arrowPointY1
+        if(hDir != 0 && vDir != 0)      // covers 4 directions
+        {
+            if( (hDir+vDir) == 0 )
+            {
+                arrowPoint_x1 = pointX + (float)(hDir*hypo1);
+                arrowPoint_y1 = pointY;
+            }
+            else
+            {
+                arrowPoint_x1 = pointX;
+                arrowPoint_y1 = pointY - (float)(hDir*hypo1);
+            }
+        }
+        else if(hDir == 0)
+        {
+            arrowPoint_x1 = pointX - (vDir * (imageRange/2));
+            arrowPoint_y1 = pointY - (vDir * (imageRange/2));
+        }
+        else if(vDir == 0)
+        {
+            arrowPoint_x1 = pointX + (hDir * (imageRange/2));
+            arrowPoint_y1 = pointY - (hDir * (imageRange/2));
+        }
+
+        // get center and arrowPoint2 angle
+        double centerAngle = getDegree(hDir, vDir);
+        double arrowPoint2_Angle = centerAngle - 45;
+        if (arrowPoint2_Angle < 0)
+            arrowPoint2_Angle+=360;
+
+        double centerAngle_Radians = Math.toRadians(centerAngle);
+        double arrowPoint2_Angle_Radians = Math.toRadians(arrowPoint2_Angle);
+
+        // find arrow point2 directions from its angle
+        int arrowPoint2_hDir, arrowPoint2_vDir;
+
+        // GETS CENTER, ASSIGNS DIRECTIONS TO ARROW POINT 2
+        if((arrowPoint2_Angle%90) == 0)
+        {
+            arrowPoint2_hDir = (int)Math.cos(arrowPoint2_Angle_Radians);
+            arrowPoint2_vDir = (int)Math.sin(arrowPoint2_Angle_Radians);
+        }
+        else
+        {
+            if(arrowPoint2_Angle < 180)
+                arrowPoint2_vDir = 1;
+            else
+                arrowPoint2_vDir = -1;
+
+            if(Math.cos(arrowPoint2_Angle_Radians) > 0)
+                arrowPoint2_hDir = 1;
+            else
+                arrowPoint2_hDir = -1;
+        }
+
+        // ASSIGN arrowPoint2 x and y
+
+        if((arrowPoint2_Angle%90) == 0)
+        {
+            arrowPoint_x2 = arrowPoint_x1 + (float)(arrowPoint2_hDir * hypo2);
+            arrowPoint_y2 = arrowPoint_y1 - (float)(arrowPoint2_vDir * hypo2);
+        }
+        else
+        {
+            arrowPoint_x2 = arrowPoint_x1 + (arrowPoint2_hDir * imageRange);
+            arrowPoint_y2 = arrowPoint_y1 - (arrowPoint2_vDir * imageRange);
+        }
     }
 
     // update points, paths and refresh canvas
@@ -150,6 +236,29 @@ public class PaintView extends View {
     {
         horizontalDir = hDir;
         verticalDir = vDir;
+    }
+
+    private double getDegree(int hDir, int vDir)
+    {
+        float resultDegree = 0;
+        if(hDir == 1)
+        {
+            resultDegree = 45 * vDir;
+        }
+        else if(hDir == 0)
+        {
+            resultDegree = 90 * vDir;
+        }
+        else if(hDir == -1)
+        {
+            resultDegree = 180 - (vDir * 45);
+        }
+
+        if(resultDegree < 0)
+        {
+            resultDegree+=360;
+        }
+        return resultDegree;
     }
 }
 

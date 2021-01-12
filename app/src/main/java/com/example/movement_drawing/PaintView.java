@@ -1,8 +1,11 @@
 package com.example.movement_drawing;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -37,7 +40,7 @@ public class PaintView extends View {
     private Paint brush = new Paint();
     private Paint brushIcon = new Paint();
     private Paint brushArrow = new Paint();
-    private float iconRadius = 10f;
+    private int iconRadius = 10;
 
     private float pointX;
     private float pointY;
@@ -53,17 +56,21 @@ public class PaintView extends View {
 
     // FOR DIRECTION ILLUSTRATION
     private Drawable directionImage;
-    private float imageRange;
-    private double hypo1, hypo2;
-    private float arrowPoint_x1;
-    private float arrowPoint_y1;
-    private float arrowPoint_x2;
-    private float arrowPoint_y2;
+    private Bitmap bitmapDirectionOriginal;
+    private Bitmap bitmapDirectionResult;
+    private int imageRange;
+    private float directionImageX, directionImageY;
+    private float offsetOrtho, offsetAngular;
 
     // Colors
     private Color colorBackground;
 
     private boolean checkStart = false;
+
+    // temp stuff
+    private int top = 100;
+    private int left = 100;
+    private float rotation = 0;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -97,13 +104,15 @@ public class PaintView extends View {
         // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-        // get direction image from drawable
-        directionImage = ResourcesCompat.getDrawable(getResources(), R.drawable.small_arrow, null);
-        directionImage.setColorFilter(new PorterDuffColorFilter(
-                getResources().getColor(R.color.colorDirectionArrow),PorterDuff.Mode.MULTIPLY));
+        // to set arrow image properly, these are offsets
         imageRange = 7*iconRadius;
-        hypo1 = Math.sqrt(2*(imageRange/2)*(imageRange/2));
-        hypo2 = Math.sqrt(2*imageRange*imageRange);
+        offsetOrtho = 4*iconRadius;
+        offsetAngular = 4*iconRadius;           // for now
+
+        // get direction image from drawable
+        //directionImage = ResourcesCompat.getDrawable(getResources(), R.drawable.small_arrow, null);
+        bitmapDirectionOriginal = BitmapFactory.decodeResource(this.getResources(), R.drawable.small_arrow);
+        bitmapDirectionResult = Bitmap.createScaledBitmap(bitmapDirectionOriginal, imageRange, imageRange, false);
 
         // run method every second
         updateTimer = new Timer();
@@ -138,17 +147,200 @@ public class PaintView extends View {
         canvas.drawPath(path, brush);
         canvas.drawCircle(pointX, pointY, iconRadius, brushIcon);
 
+        // create proper rotate bitmap
+        Matrix matrix = new Matrix();
+        matrix.postRotate(rotation);
+        int bitmapW = bitmapDirectionResult.getWidth();
+        int bitmapH = bitmapDirectionResult.getHeight();
+        Bitmap rotatedDirectionImage = Bitmap.createBitmap(bitmapDirectionResult, 0, 0, bitmapW, bitmapH, matrix, true);
 
-
-        // assign boundary points for arrow direction image
-        assignBoundPoints(horizontalDir, verticalDir);
-
-        directionImage.setBounds((int)arrowPoint_x1, (int)arrowPoint_y1, (int)arrowPoint_x2, (int)arrowPoint_y2);
-        directionImage.draw(canvas);
+        // assign top left and draw arrows
+        assignArrowTopLeft(pointX, pointY, horizontalDir, verticalDir);
+        canvas.drawBitmap(rotatedDirectionImage, directionImageX, directionImageY, brushArrow);
     }
 
-    // this assigns 2 boundary points for direction image
-    // boundary points are initialized above
+    // update points, paths and refresh canvas
+    private void updateTheDrawing()
+    {
+        pointX += (horizontalDir) * incrementPerMeter;
+        pointY += (-verticalDir) * incrementPerMeter;
+        path.lineTo(pointX, pointY);
+
+        postInvalidate();
+    }
+
+    // update direction from main
+    public void changeDirection(int hDir, int vDir)
+    {
+        horizontalDir = hDir;
+        verticalDir = vDir;
+        rotation = -getDegree(hDir, vDir);
+    }
+
+    private float getDegree(int hDir, int vDir)
+    {
+        float resultDegree = 0;
+        if(hDir == 1)
+        {
+            resultDegree = 45 * vDir;
+        }
+        else if(hDir == 0)
+        {
+            resultDegree = 90 * vDir;
+        }
+        else if(hDir == -1)
+        {
+            resultDegree = 180 - (vDir * 45);
+        }
+
+        if(resultDegree < 0)
+        {
+            resultDegree+=360;
+        }
+        return resultDegree;
+    }
+
+    // ASSIGN directionImage X Y TO HAVE ARROW IMAGE AT PROPER POSITION
+    private void assignArrowTopLeft(float centerX, float centerY, int hDir, int vDir)
+    {
+        float tempX = 0, tempY = 0;
+
+        if(hDir == 0)       // orthogonal cases
+        {
+            tempX = centerX - (imageRange/2);
+            tempY = centerY - (vDir * offsetOrtho);
+            if(vDir == 1)
+                tempY -= imageRange;
+        }else if(vDir == 0)
+        {
+            tempY = centerY -(imageRange/2);
+            tempX = centerX + (hDir * offsetOrtho);
+            if(hDir == -1)
+                tempX -= imageRange;
+        }else               // angled cases
+        {
+            float offsetAxis = offsetAngular / (float)(Math.sqrt(2));
+            tempX = centerX + (hDir * offsetAxis);
+            tempY = centerY - (vDir * offsetAxis);
+            if(hDir==-1)
+                tempX -= imageRange;
+            if(vDir==1)
+                tempY -= imageRange;
+        }
+
+        // assign values to direction image top left points
+        directionImageX = tempX;
+        directionImageY = tempY;
+
+        // hard code here for angular directions
+        if(hDir == 1 && vDir == -1)
+        {
+            directionImageX -= 2.5*iconRadius;
+            directionImageY -= 2.5*iconRadius;
+        }
+        if(hDir == 1 && vDir == 1)
+        {
+            directionImageX -= 2.5*iconRadius;
+            directionImageY -= 0.5*iconRadius;
+        }
+        if(hDir == -1 && vDir == -1)
+        {
+            directionImageX -= 0.5*iconRadius;
+            directionImageY -= 2.5*iconRadius;
+        }
+        if(hDir == -1 && vDir == 1)
+        {
+            directionImageX -= 0.5*iconRadius;
+            directionImageY -= 0.5*iconRadius;
+        }
+
+    }
+}
+
+
+
+
+// TRIED METHODS
+
+// FOR SOME INFO
+// TOUCH FOR TESTING IF IT WORKS
+    /*
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // get the point of touch
+        pointX = event.getX();
+        pointY = event.getY();
+
+        // get the action and register path
+        // not drawing yet here
+        switch(event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                path.moveTo(pointX, pointY);
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                path.lineTo(pointX, pointY);
+                break;
+            default:
+                return false;
+        }
+        postInvalidate();
+        return false;
+    }
+     */
+
+
+// DRAWING ARROW IN THE DIRECTION (NOT WORKING GOOD ENOUGH)
+    /*
+    private void assignArrowPoints(int hDir, int vDir)
+    {
+        // first point assigned
+        arrowFirstPointX = pointX + (horizontalDir * (10 * iconRadius));
+        arrowFirstPointY = pointY - (verticalDir * (10 * iconRadius));
+
+        // directions from the user character circle
+        int pointSecond_hDir = 0, pointSecond_vDir = 0;
+        int pointThird_hDir = 0, pointThird_vDir = 0;
+
+        if(hDir != 0 && vDir != 0)
+        {
+            // this covers 4 directions
+            pointSecond_hDir = -hDir;
+            pointSecond_vDir = vDir;
+            pointThird_hDir = hDir;
+            pointThird_vDir = -vDir;
+        }
+        else if(hDir == 0)
+        {
+            // this covers 2 directions
+            pointSecond_hDir = 1;
+            pointSecond_vDir = 0;
+            pointThird_hDir = -1;
+            pointThird_vDir = 0;
+        }
+        else if(vDir == 0)
+        {
+            // this covers 2 directions
+            pointSecond_hDir = 0;
+            pointSecond_vDir = 1;
+            pointThird_hDir = 0;
+            pointThird_vDir = -1;
+        }
+
+        // assign second arrow point
+        arrowSecondPointX = pointX + (pointSecond_hDir * (6 * iconRadius));
+        arrowSecondPointY = pointY - (pointSecond_vDir * (6 * iconRadius));
+
+        // assign third arrow point
+        arrowThirdPointX = pointX + (pointThird_hDir * (6 * iconRadius));
+        arrowThirdPointY = pointY - (pointThird_vDir * (6 * iconRadius));
+    }
+     */
+
+
+// this assigns 2 boundary points for direction image
+// boundary points are initialized above
+    /*
     private void assignBoundPoints(int hDir, int vDir) {
         // ASSIGN TOP LEFT BOUNDARY
         // arrowPointX1 and arrowPointY1
@@ -220,126 +412,4 @@ public class PaintView extends View {
             arrowPoint_y2 = arrowPoint_y1 - (arrowPoint2_vDir * imageRange);
         }
     }
-
-    // update points, paths and refresh canvas
-    private void updateTheDrawing()
-    {
-        pointX += (horizontalDir) * incrementPerMeter;
-        pointY += (-verticalDir) * incrementPerMeter;
-        path.lineTo(pointX, pointY);
-
-        postInvalidate();
-    }
-
-    // update direction from main
-    public void changeDirection(int hDir, int vDir)
-    {
-        horizontalDir = hDir;
-        verticalDir = vDir;
-    }
-
-    private double getDegree(int hDir, int vDir)
-    {
-        float resultDegree = 0;
-        if(hDir == 1)
-        {
-            resultDegree = 45 * vDir;
-        }
-        else if(hDir == 0)
-        {
-            resultDegree = 90 * vDir;
-        }
-        else if(hDir == -1)
-        {
-            resultDegree = 180 - (vDir * 45);
-        }
-
-        if(resultDegree < 0)
-        {
-            resultDegree+=360;
-        }
-        return resultDegree;
-    }
-}
-
-
-
-
-// TRIED METHODS
-
-// FOR SOME INFO
-// TOUCH FOR TESTING IF IT WORKS
-    /*
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        // get the point of touch
-        pointX = event.getX();
-        pointY = event.getY();
-
-        // get the action and register path
-        // not drawing yet here
-        switch(event.getAction())
-        {
-            case MotionEvent.ACTION_DOWN:
-                path.moveTo(pointX, pointY);
-                return true;
-            case MotionEvent.ACTION_MOVE:
-                path.lineTo(pointX, pointY);
-                break;
-            default:
-                return false;
-        }
-        postInvalidate();
-        return false;
-    }
-     */
-
-
-// DRAWING ARROW IN THE DIRECTION (NOT WORKING GOOD ENOUGH)
-
-    /*
-    private void assignArrowPoints(int hDir, int vDir)
-    {
-        // first point assigned
-        arrowFirstPointX = pointX + (horizontalDir * (10 * iconRadius));
-        arrowFirstPointY = pointY - (verticalDir * (10 * iconRadius));
-
-        // directions from the user character circle
-        int pointSecond_hDir = 0, pointSecond_vDir = 0;
-        int pointThird_hDir = 0, pointThird_vDir = 0;
-
-        if(hDir != 0 && vDir != 0)
-        {
-            // this covers 4 directions
-            pointSecond_hDir = -hDir;
-            pointSecond_vDir = vDir;
-            pointThird_hDir = hDir;
-            pointThird_vDir = -vDir;
-        }
-        else if(hDir == 0)
-        {
-            // this covers 2 directions
-            pointSecond_hDir = 1;
-            pointSecond_vDir = 0;
-            pointThird_hDir = -1;
-            pointThird_vDir = 0;
-        }
-        else if(vDir == 0)
-        {
-            // this covers 2 directions
-            pointSecond_hDir = 0;
-            pointSecond_vDir = 1;
-            pointThird_hDir = 0;
-            pointThird_vDir = -1;
-        }
-
-        // assign second arrow point
-        arrowSecondPointX = pointX + (pointSecond_hDir * (6 * iconRadius));
-        arrowSecondPointY = pointY - (pointSecond_vDir * (6 * iconRadius));
-
-        // assign third arrow point
-        arrowThirdPointX = pointX + (pointThird_hDir * (6 * iconRadius));
-        arrowThirdPointY = pointY - (pointThird_vDir * (6 * iconRadius));
-    }
-
      */

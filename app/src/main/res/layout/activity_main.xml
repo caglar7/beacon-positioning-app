@@ -43,65 +43,65 @@
                 android:layout_weight="1"/>
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_RightTop"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 
         <LinearLayout
+            android:layout_weight="3"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_weight="3">
+            android:orientation="horizontal">
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_Left"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
             <TextView
+                android:layout_weight="1"
                 android:id="@+id/tv_Direction"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
                 android:text="Direction"
                 android:textSize="25sp"
                 android:gravity="center"/>
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_Right"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 
         <LinearLayout
+            android:layout_weight="3"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_weight="3">
+            android:orientation="horizontal">
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_LeftBottom"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_Bottom"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
             <Button
+                android:layout_weight="1"
                 android:id="@+id/button_RightBottom"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 

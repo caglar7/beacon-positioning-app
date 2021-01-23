@@ -8,19 +8,10 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-
-import androidx.annotation.RequiresApi;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.res.ResourcesCompat;
-
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -35,6 +26,7 @@ import java.util.TimerTask;
 public class PaintView extends View {
     private static final String TAG = "PaintView";
 
+    private boolean changeScale = false;
     public LayoutParams params;
     private Path path = new Path();
     private Paint brush = new Paint();
@@ -45,7 +37,15 @@ public class PaintView extends View {
     private float pointX;
     private float pointY;
     private float incrementPerMeter;
-    private float screenScale = 10f;       // 10 meters for canvas width
+
+    // SCREEN SCALING
+    private float canvasScale = 1;
+    private float initialScreenScale = 10f;             // not changing 10m
+    private float screenScale = 10f;                    // changing one
+    private float leftBoundary, topBoundary;
+    private float rightBoundary, downBoundary;
+    private float leftEdge, topEdge, rightEdge, downEdge;
+    private boolean setInitBoundaries = false;
 
     private Timer updateTimer;
     private long updatePeriod = 1000l;
@@ -67,10 +67,11 @@ public class PaintView extends View {
 
     private boolean checkStart = false;
 
-    // temp stuff
-    private int top = 100;
-    private int left = 100;
     private float rotation = 0;
+
+    // indent level for boundary check
+    // test for now
+    private float indentValue = 50;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -109,6 +110,8 @@ public class PaintView extends View {
         offsetOrtho = 4*iconRadius;
         offsetAngular = 4*iconRadius;           // for now
 
+
+
         // get direction image from drawable
         //directionImage = ResourcesCompat.getDrawable(getResources(), R.drawable.small_arrow, null);
         bitmapDirectionOriginal = BitmapFactory.decodeResource(this.getResources(), R.drawable.small_arrow);
@@ -129,19 +132,72 @@ public class PaintView extends View {
 
     @Override
     protected void onDraw(Canvas canvas)  {
-        // canvas background color
-        canvas.drawColor(getResources().getColor(R.color.colorCanvasBackground));
+        int canvasWidth = canvas.getWidth();
+        int canvasHeight = canvas.getHeight();
 
         // put pointer on the center at first
         // init increment per meter in terms of screen coordinates
         if(checkStart)
         {
             checkStart = false;
-            pointX = canvas.getWidth()/2;
-            pointY = canvas.getHeight()/2;
+            pointX = canvasWidth/2;
+            pointY = canvasHeight/2;
             incrementPerMeter = ( (float) canvas.getWidth()) / screenScale;
             path.moveTo(pointX, pointY);
         }
+
+        if(setInitBoundaries == false)
+        {
+            // set init edge points first
+            leftEdge = 0;
+            topEdge = 0;
+            rightEdge = canvasWidth;
+            downEdge = canvasHeight;
+
+            setInitBoundaries = true;
+            leftBoundary = leftEdge + indentValue;
+            topBoundary = topEdge + indentValue;
+            rightBoundary = rightEdge - indentValue;
+            downBoundary = downEdge - indentValue;
+        }
+
+        // check the boundaries, update boundaries, 10 meters range
+        if((pointX < leftBoundary) || (pointX > rightBoundary) ||
+                (pointY < topBoundary) || (pointY > downBoundary))
+        {
+            changeScale = true;
+            screenScale += 10;
+
+            // edge points for different scales
+            float widthHalf = ((float)canvasWidth / 2);
+            float heightHalf = ((float)canvasHeight / 2);
+            leftEdge = -(widthHalf * ((screenScale/initialScreenScale)-1));
+            topEdge = -(heightHalf * ((screenScale/initialScreenScale)-1));
+            rightEdge = canvasWidth + (widthHalf * ((screenScale/initialScreenScale)-1));
+            downEdge = canvasHeight + (heightHalf * ((screenScale/initialScreenScale)-1));
+
+            // get current indent value
+            //indentValue *= (screenScale/initialScreenScale);
+
+            // boundary points
+            leftBoundary = leftEdge + indentValue;
+            topBoundary = topEdge + indentValue;
+            rightBoundary = rightEdge - indentValue;
+            downBoundary = downEdge - indentValue;
+        }
+
+        canvas.save();
+        // scaling condition
+        if(changeScale)
+        {
+            changeScale = false;
+            canvasScale = initialScreenScale/screenScale;
+        }
+        canvas.scale(canvasScale, canvasScale, canvasWidth/2, canvasHeight/2);
+
+        // canvas background color
+        canvas.drawColor(getResources().getColor(R.color.colorCanvasBackground));
+
 
         // craw circle and path
         canvas.drawPath(path, brush);
@@ -157,6 +213,8 @@ public class PaintView extends View {
         // assign top left and draw arrows
         assignArrowTopLeft(pointX, pointY, horizontalDir, verticalDir);
         canvas.drawBitmap(rotatedDirectionImage, directionImageX, directionImageY, brushArrow);
+
+        canvas.restore();
     }
 
     // update points, paths and refresh canvas
@@ -253,7 +311,6 @@ public class PaintView extends View {
             directionImageX -= 0.5*iconRadius;
             directionImageY -= 0.5*iconRadius;
         }
-
     }
 }
 

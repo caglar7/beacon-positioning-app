@@ -16,6 +16,22 @@
         android:orientation="vertical">
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_weight="13">
+
+        <TextView
+            android:layout_weight="1"
+            android:id="@+id/tv_Scale"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="@string/default_scale_text"
+            android:textSize="25sp"
+            android:gravity="center"/>
+
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,26 +39,27 @@
         android:layout_weight="9"
         android:orientation="vertical">
 
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:layout_weight="3">
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_upleft"
                 android:id="@+id/button_LeftTop"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"/>
 
-            <Button
-                android:id="@+id/button_Top"
+            <TextView
+                android:id="@+id/tv_blanktext"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"/>
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_upright"
                 android:layout_weight="1"
                 android:id="@+id/button_RightTop"
                 android:layout_width="match_parent"
@@ -56,22 +73,25 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_left"
                 android:layout_weight="1"
                 android:id="@+id/button_Left"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
             <TextView
+                android:lines="2"
                 android:layout_weight="1"
                 android:id="@+id/tv_Direction"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="Direction"
+                android:text="Your Rotation"
                 android:textSize="25sp"
                 android:gravity="center"/>
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_right"
                 android:layout_weight="1"
                 android:id="@+id/button_Right"
                 android:layout_width="match_parent"
@@ -85,19 +105,22 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_downleft"
                 android:layout_weight="1"
                 android:id="@+id/button_LeftBottom"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_down"
                 android:layout_weight="1"
                 android:id="@+id/button_Bottom"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <Button
+            <ImageButton
+                android:src="@drawable/arrow_downright"
                 android:layout_weight="1"
                 android:id="@+id/button_RightBottom"
                 android:layout_width="match_parent"

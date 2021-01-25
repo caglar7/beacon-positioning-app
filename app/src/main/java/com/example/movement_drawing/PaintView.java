@@ -12,8 +12,8 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+
 import java.util.Timer;
-import java.util.TimerTask;
 
 // for test cases
 // with timer user will be moving at 1m/s
@@ -36,23 +36,21 @@ public class PaintView extends View {
 
     private float pointX;
     private float pointY;
-    private float incrementPerMeter;
+    private float pixelPerMeter;
 
     // SCREEN SCALING
-    private float canvasScale = 1;
+    private float canvasScale = 1f;
     private float initialScreenScale = 10f;             // not changing 10m
     private float screenScale = 10f;                    // changing one
     private float leftBoundary, topBoundary;
     private float rightBoundary, downBoundary;
     private float leftEdge, topEdge, rightEdge, downEdge;
     private boolean setInitBoundaries = false;
-
-    private Timer updateTimer;
-    private long updatePeriod = 1000l;
+    private boolean setScale20 = true;              // 20m screen scale at first
 
     // at first, horizontal right is direction
-    private int horizontalDir = 1;
-    private int verticalDir = 0;
+    private int horizontalDir = 0;
+    private int verticalDir = 1;
 
     // FOR DIRECTION ILLUSTRATION
     private Drawable directionImage;
@@ -67,10 +65,9 @@ public class PaintView extends View {
 
     private boolean checkStart = false;
 
-    private float rotation = 0;
+    private float rotation = -90;
 
     // indent level for boundary check
-    // test for now
     private float indentValue = 50;
 
     // constructor of the class here
@@ -111,27 +108,17 @@ public class PaintView extends View {
         offsetAngular = 4*iconRadius;           // for now
 
 
-
         // get direction image from drawable
         //directionImage = ResourcesCompat.getDrawable(getResources(), R.drawable.small_arrow, null);
         bitmapDirectionOriginal = BitmapFactory.decodeResource(this.getResources(), R.drawable.small_arrow);
         bitmapDirectionResult = Bitmap.createScaledBitmap(bitmapDirectionOriginal, imageRange, imageRange, false);
 
-        // run method every second
-        updateTimer = new Timer();
-        updateTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if(checkStart == false)
-                {
-                    updateTheDrawing();
-                }
-            }
-        }, 0, updatePeriod);
+
     }
 
     @Override
-    protected void onDraw(Canvas canvas)  {
+    protected void onDraw(Canvas canvas)
+    {
         int canvasWidth = canvas.getWidth();
         int canvasHeight = canvas.getHeight();
 
@@ -142,7 +129,7 @@ public class PaintView extends View {
             checkStart = false;
             pointX = canvasWidth/2;
             pointY = canvasHeight/2;
-            incrementPerMeter = ( (float) canvas.getWidth()) / screenScale;
+            pixelPerMeter = ( (float)canvasWidth) / screenScale;
             path.moveTo(pointX, pointY);
         }
 
@@ -163,8 +150,10 @@ public class PaintView extends View {
 
         // check the boundaries, update boundaries, 10 meters range
         if((pointX < leftBoundary) || (pointX > rightBoundary) ||
-                (pointY < topBoundary) || (pointY > downBoundary))
+                (pointY < topBoundary) || (pointY > downBoundary)
+                || (setScale20 == true))
         {
+            setScale20 = false;
             changeScale = true;
             screenScale += 10;
 
@@ -175,9 +164,6 @@ public class PaintView extends View {
             topEdge = -(heightHalf * ((screenScale/initialScreenScale)-1));
             rightEdge = canvasWidth + (widthHalf * ((screenScale/initialScreenScale)-1));
             downEdge = canvasHeight + (heightHalf * ((screenScale/initialScreenScale)-1));
-
-            // get current indent value
-            //indentValue *= (screenScale/initialScreenScale);
 
             // boundary points
             leftBoundary = leftEdge + indentValue;
@@ -192,12 +178,12 @@ public class PaintView extends View {
         {
             changeScale = false;
             canvasScale = initialScreenScale/screenScale;
+            MainActivity.tv_ScaleLevel.setText("<--- " + (int)screenScale + " METERS --->");
         }
         canvas.scale(canvasScale, canvasScale, canvasWidth/2, canvasHeight/2);
 
         // canvas background color
         canvas.drawColor(getResources().getColor(R.color.colorCanvasBackground));
-
 
         // craw circle and path
         canvas.drawPath(path, brush);
@@ -218,21 +204,51 @@ public class PaintView extends View {
     }
 
     // update points, paths and refresh canvas
-    private void updateTheDrawing()
+    // update the drawing at every step
+    // with proper increment
+    public void updateTheDrawing(float stepLength)
     {
-        pointX += (horizontalDir) * incrementPerMeter;
-        pointY += (-verticalDir) * incrementPerMeter;
-        path.lineTo(pointX, pointY);
+        if(pixelPerMeter >0)
+        {
+            // find pixel value of one step using pixelPerMeter
+            float incrementPerStep = pixelPerMeter * stepLength;
+            if(horizontalDir != 0 && verticalDir != 0)
+            {
+                incrementPerStep = ((incrementPerStep) / (float)Math.sqrt(2d));
+            }
 
-        postInvalidate();
+            pointX += (horizontalDir) * incrementPerStep;
+            pointY += (-verticalDir) * incrementPerStep;
+            path.lineTo(pointX, pointY);
+
+            postInvalidate();
+        }
     }
 
     // update direction from main
-    public void changeDirection(int hDir, int vDir)
+    public void changeDirection(float userRotation)
     {
-        horizontalDir = hDir;
-        verticalDir = vDir;
-        rotation = -getDegree(hDir, vDir);
+        // get current angle
+        float currentAngle = getDegree(horizontalDir, verticalDir);
+
+        // get rotated angle and turn radians
+        float rotatedAngle = currentAngle - userRotation;
+        double rotatedAngle_r = Math.toRadians(rotatedAngle);
+
+        // get horizontal and vertical sin and cos
+        double cosH = Math.cos(rotatedAngle_r);
+        double sinV = Math.sin(rotatedAngle_r);
+
+        // values will have -1 0 or 1
+        int rotated_hDir = (int)Math.rint(cosH);
+        int rotated_vDir = (int)Math.rint(sinV);
+
+        // assign rotated direction to global variables
+        horizontalDir = rotated_hDir;
+        verticalDir = rotated_vDir;
+        rotation = -rotatedAngle;
+
+        postInvalidate();
     }
 
     private float getDegree(int hDir, int vDir)
@@ -313,8 +329,6 @@ public class PaintView extends View {
         }
     }
 }
-
-
 
 
 // TRIED METHODS

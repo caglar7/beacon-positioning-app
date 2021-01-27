@@ -28,7 +28,6 @@ import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.RunningAverageRssiFilter;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
 
@@ -74,11 +73,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // beacon positioning variables
     private double approachIndex = 0, moveAwayIndex = 0;
     private double measureAmount = 10f;
-    private double compareDistance = 0;
-    private ArrayList<Double> distanceList = new ArrayList<Double>();
+    private int measureCount = 0;
+    private double prevDistance = 0;
+    private double currentDistance = 0;
+    private Boolean firstScanning = true;       // just for now, change later
 
-    // for test delete
-    private int count1 = 1;
 
     @Override
     protected void onResume()
@@ -288,78 +287,51 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     {
                         b.setHardwareEqualityEnforced(true);
 
-                        double distance = b.getDistance();
+                        prevDistance = currentDistance;
+                        currentDistance = b.getDistance();
+                        if(firstScanning)
+                        {
+                            prevDistance = currentDistance;
+                            firstScanning = false;
+                        }
 
                         // GET APPROACH AND MOVE AWAY AMOUNTS
-                        if(compareDistance != 0)
+                        if(currentDistance < prevDistance)
                         {
-                            if(distance > compareDistance)
-                            {
-                                moveAwayIndex++;
-                            }
-                            else if(distance < compareDistance)
-                            {
-                                approachIndex++;
-                            }
+                            // approaching
+                            approachIndex++;
+                        }
+                        else if(currentDistance > prevDistance)
+                        {
+                            // moving away
+                            moveAwayIndex++;
                         }
 
-                        compareDistance = getPrevAvgDistance(distance);
-                        String disString = String.format("%.1f", distance);
-
-                        // test
-                        Log.d(TAG, "distance " + count1 + ": " + disString);
-                        count1++;
-                        if(distanceList.size() == measureAmount)
+                        measureCount++;
+                        if(measureCount >= measureAmount)
                         {
-                            distanceList.clear();
-                            Log.d(TAG, "PERIOD DONE\n" + "approachIndex: " + approachIndex +
-                                    "\nmoveAwayIndex: " + moveAwayIndex);
-                            approachIndex = 0;
-                            moveAwayIndex = 0;
-                        }
-
-                        // when distanceList reaches measureAmount, calculate and reset
-                        /*
-                        if(distanceList.size() == measureAmount)
-                        {
-                            distanceList.clear();
-                            double approachPercentage = 0, moveAwayPercentage = 0;
+                            double percentageApproach = 0, percentageMoveAway = 0;
                             if(approachIndex!=0 || moveAwayIndex!=0)
                             {
-                                approachPercentage = (approachIndex/(approachIndex+moveAwayIndex)) * 100;
-                                moveAwayPercentage = (moveAwayIndex/((approachIndex+moveAwayIndex))) * 100;
-                            }else {
-                                Toast.makeText(MainActivity.this, "both indexes were 0", Toast.LENGTH_SHORT).show();
+                                double divider = approachIndex+moveAwayIndex;
+                                percentageApproach = (approachIndex/divider) * 100;
+                                percentageMoveAway = (moveAwayIndex/divider) * 100;
+                                Toast.makeText(MainActivity.this, "Approach: " +
+                                        percentageApproach + "% --- MoveAway: " + percentageMoveAway + "%",
+                                        Toast.LENGTH_SHORT).show();
                             }
 
-                            // after done calculating, reset index values
+                            // reset index and parameters
                             approachIndex = 0;
                             moveAwayIndex = 0;
-
-                            // show the percentage values
-                            Toast.makeText(MainActivity.this, "Approach: " + approachPercentage +
-                                    " MoveAway: " + moveAwayPercentage, Toast.LENGTH_LONG).show();
+                            measureCount = 0;
                         }
-                        */
                     }
                 }
             }
         });
     }
 
-    private double getPrevAvgDistance(double dis)
-    {
-        double prevAverage;
-
-        // add distance and get average
-        distanceList.add(dis);
-        double total = 0;
-        for(double d: distanceList)
-            total+=d;
-        prevAverage = total / (distanceList.size());
-
-        return prevAverage;
-    }
 
     private void startMonitoring()
     {

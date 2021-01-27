@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Movement-Drawing</string>
     <string name="default_scale_text">&lt; --- 20 METERS --- &gt;</string>
+    <string name="start_scanning">Start\nScanning</string>
+    <string name="stop_scanning">Stop\nScanning</string>
 </resources>

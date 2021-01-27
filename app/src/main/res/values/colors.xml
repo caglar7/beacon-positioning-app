@@ -7,4 +7,7 @@
     <color name="colorPath">#A6506168</color>
     <color name="colorUserIcon">#2CA3D8</color>
     <color name="colorDirectionArrow">#1B8CBF</color>
+    <color name="colorStartScanning">#6CD170</color>
+    <color name="colorStopScanning">#EA857D</color>
+    <color name="colorTextStartStop">#082740</color>
 </resources>

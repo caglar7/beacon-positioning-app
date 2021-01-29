@@ -10,4 +10,5 @@
     <color name="colorStartScanning">#6CD170</color>
     <color name="colorStopScanning">#EA857D</color>
     <color name="colorTextStartStop">#082740</color>
+    <color name="colorBeaconRadius">#D01E95CA</color>
 </resources>

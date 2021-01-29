@@ -32,6 +32,7 @@ public class PaintView extends View {
     private Paint brush = new Paint();
     private Paint brushIcon = new Paint();
     private Paint brushArrow = new Paint();
+    private Paint brushBeaconRadius = new Paint();
     private int iconRadius = 10;
 
     private float pointX;
@@ -70,6 +71,9 @@ public class PaintView extends View {
     // indent level for boundary check
     private float indentValue = 50;
 
+    // something for test
+    private float beaconRadius = 0;
+
     // constructor of the class here
     public PaintView(Context context) {
         super(context);
@@ -98,6 +102,13 @@ public class PaintView extends View {
         brushArrow.setStrokeJoin(Paint.Join.ROUND);
         brushArrow.setStrokeCap(Paint.Cap.ROUND);
         brushArrow.setStrokeWidth(15f);
+
+        brushBeaconRadius.setAntiAlias(true);
+        brushBeaconRadius.setColor(getResources().getColor(R.color.colorBeaconRadius));
+        brushBeaconRadius.setStyle(Paint.Style.STROKE);
+        brushBeaconRadius.setStrokeJoin(Paint.Join.ROUND);
+        brushBeaconRadius.setStrokeCap(Paint.Cap.ROUND);
+        brushBeaconRadius.setStrokeWidth(20f);
 
         // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
@@ -200,13 +211,16 @@ public class PaintView extends View {
         assignArrowTopLeft(pointX, pointY, horizontalDir, verticalDir);
         canvas.drawBitmap(rotatedDirectionImage, directionImageX, directionImageY, brushArrow);
 
+        // for test
+        canvas.drawCircle(pointX, pointY, beaconRadius, brushBeaconRadius);
+
         canvas.restore();
     }
 
     // update points, paths and refresh canvas
     // update the drawing at every step
     // with proper increment
-    public void updateTheDrawing(float stepLength)
+    public void updateTheDrawing(float stepLength, float bRadius)
     {
         if(pixelPerMeter >0)
         {
@@ -220,6 +234,9 @@ public class PaintView extends View {
             pointX += (horizontalDir) * incrementPerStep;
             pointY += (-verticalDir) * incrementPerStep;
             path.lineTo(pointX, pointY);
+
+            // for test
+            beaconRadius = pixelPerMeter * bRadius;
 
             postInvalidate();
         }

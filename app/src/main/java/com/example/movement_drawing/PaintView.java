@@ -72,17 +72,28 @@ public class PaintView extends View {
     // indent level for boundary check
     private float indentValue = 50;
 
-    // something for test, drawing beacon circles
+    // for drawing beacon circles
     private float beaconRadius = 0;
     private Boolean drawBeaconCircle = false;
     private ArrayList<Float> beaconCircles_XPoints = new ArrayList<Float>();
     private ArrayList<Float> beaconCircles_YPoints = new ArrayList<Float>();
     private ArrayList<Float> beaconCircles_RValues = new ArrayList<Float>();
+    private int scanPeriod = 5;     // draw circle once in every period
+    private int scanCheck;
+
+    // these lists are for determining better beacon circles
+    private ArrayList<Float> topAverage_RValues = new ArrayList<Float>();
+    private ArrayList<Float> topAverage_XPoints = new ArrayList<Float>();
+    private ArrayList<Float> topAverage_YPoints = new ArrayList<Float>();
+
 
     // constructor of the class here
     public PaintView(Context context) {
         super(context);
         checkStart = true;
+
+        // beacon circle scan period count
+        scanCheck = scanPeriod -1;
 
         // brush to draw path
         brush.setAntiAlias(true);
@@ -207,7 +218,7 @@ public class PaintView extends View {
             float centerX = beaconCircles_XPoints.get(i);
             float centerY = beaconCircles_YPoints.get(i);
             float circleR = beaconCircles_RValues.get(i);
-            canvas.drawCircle(centerX, centerY, 3*circleR, brushBeaconRadius);
+            canvas.drawCircle(centerX, centerY, circleR, brushBeaconRadius);
         }
 
         // draw circle and path
@@ -253,23 +264,65 @@ public class PaintView extends View {
 
     public void updateBeaconCircles(float bRadius)
     {
-        // if you are just standing, don't draw circles yet
-        if(beaconCircles_XPoints.size() > 0)
-        {
-            float lastX = beaconCircles_XPoints.get(beaconCircles_XPoints.size()-1);
-            float lastY = beaconCircles_YPoints.get(beaconCircles_YPoints.size()-1);
-            if(lastX == pointX && lastY==pointY)
-                return;
-        }
-
         if(pixelPerMeter > 0)
         {
+            float topAverageX=0, topAverageY=0, topAverageR=0;
             beaconRadius = pixelPerMeter * bRadius;
 
+            // run once in every scanPeriod
+            // take top 2 values from the measurements and draw circle
+            scanCheck++;
+            topAverage_RValues.add(beaconRadius);
+            topAverage_XPoints.add(pointX);
+            topAverage_YPoints.add(pointY);
+            if(scanCheck != scanPeriod)
+               return;
+            else
+            {
+                scanCheck = 0;
+                // look for the top 2 values in topAverage lists
+                // 2 can change
+                for(int i=0; i<2; i++)
+                {
+                    float topValueR = topAverage_RValues.get(0);
+                    float topPointX, topPointY;
+                    for(float r: topAverage_RValues)
+                    {
+                        if(r > topValueR)
+                        {
+                            topValueR = r;
+                        }
+                    }
+                    int topIndex = topAverage_RValues.indexOf(topValueR);
+                    topPointX = topAverage_XPoints.get(topIndex);
+                    topPointY = topAverage_YPoints.get(topIndex);
+                    topAverageR += topValueR;
+                    topAverageX += topPointX;
+                    topAverageY += topPointY;
+                    topAverage_RValues.remove(topIndex);
+                    topAverage_XPoints.remove(topIndex);
+                    topAverage_YPoints.remove(topIndex);
+                }
+                // find topAverage R, x and y points, 2 will change
+                topAverageR = topAverageR / 2;
+                topAverageX = topAverageX / 2;
+                topAverageY = topAverageY / 2;
+            }
+
+
+            // if you are just standing, don't draw circles yet
+            if(beaconCircles_XPoints.size() > 0)
+            {
+                float lastX = beaconCircles_XPoints.get(beaconCircles_XPoints.size()-1);
+                float lastY = beaconCircles_YPoints.get(beaconCircles_YPoints.size()-1);
+                if(lastX == topAverageX && lastY==topAverageY)
+                    return;
+            }
+
             // add beacon circle to the list
-            beaconCircles_XPoints.add(pointX);
-            beaconCircles_YPoints.add(pointY);
-            beaconCircles_RValues.add(beaconRadius);
+            beaconCircles_XPoints.add(topAverageX);
+            beaconCircles_YPoints.add(topAverageY);
+            beaconCircles_RValues.add(topAverageR);
 
             postInvalidate();
         }

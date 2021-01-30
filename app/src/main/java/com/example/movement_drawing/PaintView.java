@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 
+import java.util.ArrayList;
 import java.util.Timer;
 
 // for test cases
@@ -71,8 +72,12 @@ public class PaintView extends View {
     // indent level for boundary check
     private float indentValue = 50;
 
-    // something for test
+    // something for test, drawing beacon circles
     private float beaconRadius = 0;
+    private Boolean drawBeaconCircle = false;
+    private ArrayList<Float> beaconCircles_XPoints = new ArrayList<Float>();
+    private ArrayList<Float> beaconCircles_YPoints = new ArrayList<Float>();
+    private ArrayList<Float> beaconCircles_RValues = new ArrayList<Float>();
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -105,10 +110,10 @@ public class PaintView extends View {
 
         brushBeaconRadius.setAntiAlias(true);
         brushBeaconRadius.setColor(getResources().getColor(R.color.colorBeaconRadius));
-        brushBeaconRadius.setStyle(Paint.Style.STROKE);
+        brushBeaconRadius.setStyle(Paint.Style.FILL);
         brushBeaconRadius.setStrokeJoin(Paint.Join.ROUND);
         brushBeaconRadius.setStrokeCap(Paint.Cap.ROUND);
-        brushBeaconRadius.setStrokeWidth(20f);
+        brushBeaconRadius.setStrokeWidth(10f);
 
         // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
@@ -193,10 +198,19 @@ public class PaintView extends View {
         }
         canvas.scale(canvasScale, canvasScale, canvasWidth/2, canvasHeight/2);
 
-        // canvas background color
+        // CANVAS BACKGROUND DRAW
         canvas.drawColor(getResources().getColor(R.color.colorCanvasBackground));
 
-        // craw circle and path
+        // BEACON CIRCLES
+        for(int i=0; i<beaconCircles_RValues.size(); i++)
+        {
+            float centerX = beaconCircles_XPoints.get(i);
+            float centerY = beaconCircles_YPoints.get(i);
+            float circleR = beaconCircles_RValues.get(i);
+            canvas.drawCircle(centerX, centerY, 3*circleR, brushBeaconRadius);
+        }
+
+        // draw circle and path
         canvas.drawPath(path, brush);
         canvas.drawCircle(pointX, pointY, iconRadius, brushIcon);
 
@@ -211,8 +225,6 @@ public class PaintView extends View {
         assignArrowTopLeft(pointX, pointY, horizontalDir, verticalDir);
         canvas.drawBitmap(rotatedDirectionImage, directionImageX, directionImageY, brushArrow);
 
-        // for test
-        canvas.drawCircle(pointX, pointY, beaconRadius, brushBeaconRadius);
 
         canvas.restore();
     }
@@ -220,7 +232,7 @@ public class PaintView extends View {
     // update points, paths and refresh canvas
     // update the drawing at every step
     // with proper increment
-    public void updateTheDrawing(float stepLength, float bRadius)
+    public void updateTheDrawing(float stepLength)
     {
         if(pixelPerMeter >0)
         {
@@ -235,8 +247,29 @@ public class PaintView extends View {
             pointY += (-verticalDir) * incrementPerStep;
             path.lineTo(pointX, pointY);
 
-            // for test
+            postInvalidate();
+        }
+    }
+
+    public void updateBeaconCircles(float bRadius)
+    {
+        // if you are just standing, don't draw circles yet
+        if(beaconCircles_XPoints.size() > 0)
+        {
+            float lastX = beaconCircles_XPoints.get(beaconCircles_XPoints.size()-1);
+            float lastY = beaconCircles_YPoints.get(beaconCircles_YPoints.size()-1);
+            if(lastX == pointX && lastY==pointY)
+                return;
+        }
+
+        if(pixelPerMeter > 0)
+        {
             beaconRadius = pixelPerMeter * bRadius;
+
+            // add beacon circle to the list
+            beaconCircles_XPoints.add(pointX);
+            beaconCircles_YPoints.add(pointY);
+            beaconCircles_RValues.add(beaconRadius);
 
             postInvalidate();
         }

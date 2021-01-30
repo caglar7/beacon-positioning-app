@@ -269,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if(moving)
         {
             float stepDistance = rangeMin + (rangeMax-rangeMin)*rand.nextFloat();
-            paintView.updateTheDrawing(stepDistance, (float)distanceValue);
+            paintView.updateTheDrawing(stepDistance);
         }
     }
 
@@ -304,6 +304,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         distanceValue = getDistanceForDevice(txValue, rssiValue);
                         String distanceString = String.format("%.1f", distanceValue);
                         Log.d(TAG, "Distance: " + distanceString);
+
+                        paintView.updateBeaconCircles((float)distanceValue);
                     }
                 }
             }

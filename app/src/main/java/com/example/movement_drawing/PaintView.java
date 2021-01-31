@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -79,21 +80,23 @@ public class PaintView extends View {
     private ArrayList<Float> beaconCircles_YPoints = new ArrayList<Float>();
     private ArrayList<Float> beaconCircles_RValues = new ArrayList<Float>();
     private int scanPeriod = 5;     // draw circle once in every period
-    private int scanCheck;
+    private int scanCheck = 0;
 
     // these lists are for determining better beacon circles
     private ArrayList<Float> topAverage_RValues = new ArrayList<Float>();
     private ArrayList<Float> topAverage_XPoints = new ArrayList<Float>();
     private ArrayList<Float> topAverage_YPoints = new ArrayList<Float>();
+    private int topAverageRange = 2;            // take top 2 points for avg
+
+    // centroid positioning system parameters
+    private ArrayList<Float> intersection_XPoints = new ArrayList<Float>();
+    private ArrayList<Float> intersection_YPoints = new ArrayList<Float>();
 
 
     // constructor of the class here
     public PaintView(Context context) {
         super(context);
         checkStart = true;
-
-        // beacon circle scan period count
-        scanCheck = scanPeriod -1;
 
         // brush to draw path
         brush.setAntiAlias(true);
@@ -124,7 +127,7 @@ public class PaintView extends View {
         brushBeaconRadius.setStyle(Paint.Style.FILL);
         brushBeaconRadius.setStrokeJoin(Paint.Join.ROUND);
         brushBeaconRadius.setStrokeCap(Paint.Cap.ROUND);
-        brushBeaconRadius.setStrokeWidth(10f);
+        brushBeaconRadius.setStrokeWidth(0f);
 
         // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
@@ -281,8 +284,7 @@ public class PaintView extends View {
             {
                 scanCheck = 0;
                 // look for the top 2 values in topAverage lists
-                // 2 can change
-                for(int i=0; i<2; i++)
+                for(int i=0; i<topAverageRange; i++)
                 {
                     float topValueR = topAverage_RValues.get(0);
                     float topPointX, topPointY;
@@ -304,9 +306,16 @@ public class PaintView extends View {
                     topAverage_YPoints.remove(topIndex);
                 }
                 // find topAverage R, x and y points, 2 will change
-                topAverageR = topAverageR / 2;
-                topAverageX = topAverageX / 2;
-                topAverageY = topAverageY / 2;
+                topAverageR = topAverageR / topAverageRange;
+                topAverageX = topAverageX / topAverageRange;
+                topAverageY = topAverageY / topAverageRange;
+                // clear lists the second period
+                topAverage_RValues.clear();
+                topAverage_XPoints.clear();
+                topAverage_YPoints.clear();
+
+                // for test
+                topAverageR *= 3.6f;
             }
 
 
@@ -319,10 +328,61 @@ public class PaintView extends View {
                     return;
             }
 
+            // before adding new beacon circle to the list
+            // find intersection points, using topAverage values for this case
+            // later we gonna use normal average values
+            if(beaconCircles_RValues.size() > 0)
+            {
+                Log.d(TAG, "NEW CIRCLE");
+                for(int i=0; i<beaconCircles_RValues.size(); i++)
+                {
+                    // check for the intersection at first
+                    float compareCircleR = beaconCircles_RValues.get(i);
+                    float compareCircleX = beaconCircles_XPoints.get(i);
+                    float compareCircleY = beaconCircles_YPoints.get(i);
+                    float xDiffSquare = (float)Math.pow((topAverageX-compareCircleX), 2);
+                    float yDiffSquare = (float)Math.pow((topAverageY-compareCircleY), 2);
+                    float circleDistance = (float)Math.sqrt(xDiffSquare+yDiffSquare);
+                    if(circleDistance <= (topAverageR+compareCircleR))
+                    {
+                        // when there is an intersection
+                        if(circleDistance < Math.abs(topAverageR-compareCircleR))
+                        {
+                            // one circle is in another, special condition
+
+                        }
+                        else
+                        {
+                            // 2 intersection points
+                            double d = circleDistance;
+                            double a = ( (Math.pow(compareCircleR,2)) - (Math.pow(topAverageR,2))
+                                        + (Math.pow(d, 2)) ) / (d * 2);
+                            double h = Math.sqrt( (Math.pow(compareCircleR, 2)) - Math.pow(a, 2) );
+                            double xcenter = compareCircleX + ( (a *(topAverageX-compareCircleX)) / d);
+                            double ycenter = compareCircleY + ( (a *(topAverageY-compareCircleY)) / d);
+                            // intersection point1
+                            double interX1 = xcenter + ((h*(topAverageY-compareCircleY)) / d);
+                            double interY1 = xcenter - ((h*(topAverageX-compareCircleX)) / d);
+                            // intersection point2
+                            double interX2 = xcenter - ((h*(topAverageY-compareCircleY)) / d);
+                            double interY2 = xcenter + ((h*(topAverageX-compareCircleX)) / d);
+                            intersection_XPoints.add((float)interX1);
+                            intersection_YPoints.add((float)interY1);
+                            intersection_XPoints.add((float)interX2);
+                            intersection_YPoints.add((float)interY2);
+                        }
+                    }
+                }
+            }
+
+
             // add beacon circle to the list
             beaconCircles_XPoints.add(topAverageX);
             beaconCircles_YPoints.add(topAverageY);
             beaconCircles_RValues.add(topAverageR);
+
+            String tavgR = String.format("%.1f", topAverageR/pixelPerMeter);
+            Toast.makeText(getContext(), "Beacon Radius: " + tavgR, Toast.LENGTH_SHORT).show();
 
             postInvalidate();
         }

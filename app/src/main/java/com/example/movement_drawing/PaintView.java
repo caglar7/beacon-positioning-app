@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
@@ -35,6 +36,8 @@ public class PaintView extends View {
     private Paint brushIcon = new Paint();
     private Paint brushArrow = new Paint();
     private Paint brushBeaconRadius = new Paint();
+    private Paint brushIntersections = new Paint();
+    private Paint brushBeaconRegion = new Paint();
     private int iconRadius = 10;
 
     private float pointX;
@@ -91,7 +94,15 @@ public class PaintView extends View {
     // centroid positioning system parameters
     private ArrayList<Float> intersection_XPoints = new ArrayList<Float>();
     private ArrayList<Float> intersection_YPoints = new ArrayList<Float>();
-
+    private float intersectionRadius = 0.25f;
+    private float intersectionTotalX = 0;
+    private float intersectionTotalY = 0;
+    private float intersectionCenterX = 0;
+    private float intersectionCenterY = 0;
+    private float beaconRegionR = 2;
+    // deleting some of the intersection points
+    private Boolean checkIntersectionClean = false;
+    private int cleanStartSize = 10;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -129,6 +140,21 @@ public class PaintView extends View {
         brushBeaconRadius.setStrokeCap(Paint.Cap.ROUND);
         brushBeaconRadius.setStrokeWidth(0f);
 
+        brushIntersections.setAntiAlias(true);
+        brushIntersections.setColor(getResources().getColor(R.color.colorIntersections));
+        brushIntersections.setStyle(Paint.Style.FILL);
+        brushIntersections.setStrokeJoin(Paint.Join.ROUND);
+        brushIntersections.setStrokeCap(Paint.Cap.ROUND);
+        brushIntersections.setStrokeWidth(0f);
+
+        brushBeaconRegion.setAntiAlias(true);
+        brushBeaconRegion.setColor(getResources().getColor(R.color.colorBeaconRegion));
+        brushBeaconRegion.setStyle(Paint.Style.FILL);
+        brushBeaconRegion.setStrokeJoin(Paint.Join.ROUND);
+        brushBeaconRegion.setStrokeCap(Paint.Cap.ROUND);
+        brushBeaconRegion.setStrokeWidth(0f);
+
+
         // layout settings
         params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
@@ -160,6 +186,8 @@ public class PaintView extends View {
             pointX = canvasWidth/2;
             pointY = canvasHeight/2;
             pixelPerMeter = ( (float)canvasWidth) / screenScale;
+            intersectionRadius *= pixelPerMeter;
+            beaconRegionR *= pixelPerMeter;
             path.moveTo(pointX, pointY);
         }
 
@@ -223,6 +251,45 @@ public class PaintView extends View {
             float circleR = beaconCircles_RValues.get(i);
             canvas.drawCircle(centerX, centerY, circleR, brushBeaconRadius);
         }
+        // INTERSECTION POINTS
+
+        // remove the furthest intersection point
+        if(checkIntersectionClean == true && intersection_XPoints.size()>cleanStartSize)
+        {
+            checkIntersectionClean = false;
+            float maxDistance = 0;
+            float maxIndex = 0;
+            for(int c=0; c<intersection_XPoints.size(); c++)
+            {
+                float interX = intersection_XPoints.get(c);
+                float interY = intersection_YPoints.get(c);
+                float distanceDiff = (float) Math.sqrt( (Math.pow((interX-intersectionCenterX), 2)) +
+                        (Math.pow((interY-intersectionCenterY), 2)) );
+                if(distanceDiff > maxDistance)
+                {
+                    maxDistance = distanceDiff;
+                    maxIndex = c;
+                }
+            }
+            intersection_XPoints.remove(maxIndex);
+            intersection_YPoints.remove(maxIndex);
+        }
+
+        intersectionTotalX = 0;
+        intersectionTotalY = 0;
+        float intersectionSize = intersection_XPoints.size();
+        for(int i=0; i<intersection_XPoints.size(); i++)
+        {
+            float interX = intersection_XPoints.get(i);
+            float interY = intersection_YPoints.get(i);
+            canvas.drawCircle(interX, interY, intersectionRadius, brushIntersections);
+            intersectionTotalX += interX;
+            intersectionTotalY += interY;
+        }
+        intersectionCenterX = intersectionTotalX/intersectionSize;
+        intersectionCenterY = intersectionTotalY/intersectionSize;
+        // draw red beacon region for testing
+        canvas.drawCircle(intersectionCenterX, intersectionCenterY, beaconRegionR, brushBeaconRegion);
 
         // draw circle and path
         canvas.drawPath(path, brush);
@@ -282,6 +349,8 @@ public class PaintView extends View {
                return;
             else
             {
+                // try normal average as well
+
                 scanCheck = 0;
                 // look for the top 2 values in topAverage lists
                 for(int i=0; i<topAverageRange; i++)
@@ -309,13 +378,15 @@ public class PaintView extends View {
                 topAverageR = topAverageR / topAverageRange;
                 topAverageX = topAverageX / topAverageRange;
                 topAverageY = topAverageY / topAverageRange;
+
+
                 // clear lists the second period
                 topAverage_RValues.clear();
                 topAverage_XPoints.clear();
                 topAverage_YPoints.clear();
 
                 // for test
-                topAverageR *= 3.6f;
+                topAverageR *= 4.5f;
             }
 
 
@@ -351,7 +422,7 @@ public class PaintView extends View {
                             // one circle is in another, special condition
 
                         }
-                        else
+                        else if(circleDistance != 0)
                         {
                             // 2 intersection points
                             double d = circleDistance;
@@ -360,16 +431,31 @@ public class PaintView extends View {
                             double h = Math.sqrt( (Math.pow(compareCircleR, 2)) - Math.pow(a, 2) );
                             double xcenter = compareCircleX + ( (a *(topAverageX-compareCircleX)) / d);
                             double ycenter = compareCircleY + ( (a *(topAverageY-compareCircleY)) / d);
+
                             // intersection point1
                             double interX1 = xcenter + ((h*(topAverageY-compareCircleY)) / d);
-                            double interY1 = xcenter - ((h*(topAverageX-compareCircleX)) / d);
+                            double interY1 = ycenter - ((h*(topAverageX-compareCircleX)) / d);
+
                             // intersection point2
                             double interX2 = xcenter - ((h*(topAverageY-compareCircleY)) / d);
-                            double interY2 = xcenter + ((h*(topAverageX-compareCircleX)) / d);
+                            double interY2 = ycenter + ((h*(topAverageX-compareCircleX)) / d);
                             intersection_XPoints.add((float)interX1);
                             intersection_YPoints.add((float)interY1);
                             intersection_XPoints.add((float)interX2);
                             intersection_YPoints.add((float)interY2);
+
+                            checkIntersectionClean = true;
+                            // test log
+                            /*
+                            Log.d(TAG, "CIRCLES");
+                            Log.d(TAG, "circle0 x" + compareCircleX + " circle0 y: " + compareCircleY
+                                    + " circle0 r: " + compareCircleR);
+                            Log.d(TAG, "circle1 x" + topAverageX + " circle1 y: " + topAverageY
+                                    + " circle0 1: " + topAverageR);
+                            Log.d(TAG, "INTERSECTIONS");
+                            Log.d(TAG, "interX1: " + interX1 + " interY1: " + interY1);
+                            Log.d(TAG, "interX2: " + interY2 + " interY2: " + interY2);
+                             */
                         }
                     }
                 }

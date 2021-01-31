@@ -11,4 +11,6 @@
     <color name="colorStopScanning">#EA857D</color>
     <color name="colorTextStartStop">#082740</color>
     <color name="colorBeaconRadius">#0D01453F</color>
+    <color name="colorIntersections">#4A61E1</color>
+    <color name="colorBeaconRegion">#80DF8881</color>
 </resources>

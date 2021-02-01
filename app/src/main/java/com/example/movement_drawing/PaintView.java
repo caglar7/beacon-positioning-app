@@ -100,9 +100,11 @@ public class PaintView extends View {
     private float intersectionCenterX = 0;
     private float intersectionCenterY = 0;
     private float beaconRegionR = 2;
-    // deleting some of the intersection points
+    // deleting some of the intersection points, furthest point for better accuracy
     private Boolean checkIntersectionClean = false;
     private int cleanStartSize = 10;
+    private float furthestPointsRange = 20;      // in % values
+    private float intersectionFurthestDistance;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -251,30 +253,8 @@ public class PaintView extends View {
             float circleR = beaconCircles_RValues.get(i);
             canvas.drawCircle(centerX, centerY, circleR, brushBeaconRadius);
         }
+
         // INTERSECTION POINTS
-
-        // remove the furthest intersection point
-        if(checkIntersectionClean == true && intersection_XPoints.size()>cleanStartSize)
-        {
-            checkIntersectionClean = false;
-            float maxDistance = 0;
-            float maxIndex = 0;
-            for(int c=0; c<intersection_XPoints.size(); c++)
-            {
-                float interX = intersection_XPoints.get(c);
-                float interY = intersection_YPoints.get(c);
-                float distanceDiff = (float) Math.sqrt( (Math.pow((interX-intersectionCenterX), 2)) +
-                        (Math.pow((interY-intersectionCenterY), 2)) );
-                if(distanceDiff > maxDistance)
-                {
-                    maxDistance = distanceDiff;
-                    maxIndex = c;
-                }
-            }
-            intersection_XPoints.remove(maxIndex);
-            intersection_YPoints.remove(maxIndex);
-        }
-
         intersectionTotalX = 0;
         intersectionTotalY = 0;
         float intersectionSize = intersection_XPoints.size();
@@ -288,6 +268,39 @@ public class PaintView extends View {
         }
         intersectionCenterX = intersectionTotalX/intersectionSize;
         intersectionCenterY = intersectionTotalY/intersectionSize;
+
+        // INTERSECTION CLEANING
+        intersectionFurthestDistance = 0;
+        ArrayList<Float> intersectionDistances = new ArrayList<Float>();
+        if((checkIntersectionClean == true) && (intersectionSize > cleanStartSize))
+        {
+            // first find furthest intersection point distance
+            for(int i=0; i<intersection_XPoints.size(); i++)
+            {
+                float interX = intersection_XPoints.get(i);
+                float interY = intersection_YPoints.get(i);
+                float xDiffSquare = (float)Math.pow((interX-intersectionCenterX), 2);
+                float yDiffSquare = (float)Math.pow((interY-intersectionCenterY), 2);
+                float dis = (float)Math.sqrt(xDiffSquare + yDiffSquare);
+                intersectionDistances.add(dis);
+                if(dis > intersectionFurthestDistance)
+                {
+                    intersectionFurthestDistance = dis;
+                }
+            }
+            // remove 20% furthest points, 20 can change
+            float boundaryPointDis = ((100-furthestPointsRange)/100) * intersectionFurthestDistance;
+            for(int r=0; r<intersection_XPoints.size(); r++)
+            {
+                if(intersectionDistances.get(r) > boundaryPointDis)
+                {
+                    intersection_XPoints.remove(r);
+                    intersection_YPoints.remove(r);
+                }
+            }
+            Log.d(TAG, "CLEANING AFTER " + boundaryPointDis/pixelPerMeter + " METERS");
+        }
+
         // draw red beacon region for testing
         canvas.drawCircle(intersectionCenterX, intersectionCenterY, beaconRegionR, brushBeaconRegion);
 
@@ -384,9 +397,6 @@ public class PaintView extends View {
                 topAverage_RValues.clear();
                 topAverage_XPoints.clear();
                 topAverage_YPoints.clear();
-
-                // for test
-                topAverageR *= 4.5f;
             }
 
 
@@ -461,7 +471,6 @@ public class PaintView extends View {
                 }
             }
 
-
             // add beacon circle to the list
             beaconCircles_XPoints.add(topAverageX);
             beaconCircles_YPoints.add(topAverageY);
@@ -523,7 +532,7 @@ public class PaintView extends View {
         return resultDegree;
     }
 
-    // ASSIGN directionImage X Y TO HAVE ARROW IMAGE AT PROPER POSITION
+    // ASSIGN directionImage X Y TO HAVE ARROW IMAGE AT PROPER POSITIONS
     private void assignArrowTopLeft(float centerX, float centerY, int hDir, int vDir)
     {
         float tempX = 0, tempY = 0;

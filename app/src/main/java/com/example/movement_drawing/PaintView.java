@@ -101,10 +101,13 @@ public class PaintView extends View {
     private float beaconRegionR = 2.5f;
     // deleting some of the intersection points, furthest point for better accuracy
     private Boolean checkIntersectionClean = false;
-    private int cleanStartSize = 10;
-    private float furtherRange = 30;                // furthest 20 percent points
+    private int cleanStartSize = 20;
+    private float furtherRange = 10;                // furthest 20 percent points
     private float intersectionFurthestDistance;
     private float furtherBoundary;
+
+    // for test
+    private float cleaningRange;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -198,6 +201,9 @@ public class PaintView extends View {
             intersectionRadius *= pixelPerMeter;
             beaconRegionR *= pixelPerMeter;
             path.moveTo(pointX, pointY);
+
+            // for test
+            cleaningRange = 100*pixelPerMeter;
         }
 
         if(setInitBoundaries == false)
@@ -279,7 +285,6 @@ public class PaintView extends View {
             intersectionCenterY = intersectionTotalY/((float)intersectionSize);
         }
 
-        /*
         // INTERSECTION CLEANING
         if((checkIntersectionClean == true) && (intersectionSize > cleanStartSize))
         {
@@ -301,13 +306,34 @@ public class PaintView extends View {
                     intersectionFurthestDistance = (float)dis;
                 }
             }
+            // cleaning points further from the boundary
+            furtherBoundary = ((100f-furtherRange)/100f) * intersectionFurthestDistance;
+            ArrayList<Float> tempPointsX = new ArrayList<Float>();
+            ArrayList<Float> tempPointsY = new ArrayList<Float>();
+
+            for(int d=0; d<intersectionSize; d++)
+            {
+                float dis = intersectionDistances.get(d);
+                if(dis < furtherBoundary)
+                {
+                    tempPointsX.add(intersection_XPoints.get(d));
+                    tempPointsY.add(intersection_YPoints.get(d));
+                }
+            }
+            intersection_XPoints.clear();
+            intersection_YPoints.clear();
+            intersection_XPoints.addAll(tempPointsX);
+            intersection_YPoints.addAll(tempPointsY);
+            cleaningRange = furtherBoundary;
         }
-         */
 
         // draw red beacon region
-        if(intersection_XPoints.size()>0)
+        if(intersectionSize>0)
             canvas.drawCircle(intersectionCenterX, intersectionCenterY, beaconRegionR, brushBeaconRegion);
 
+        // draw cleaning boundary, range is assign when we got a proper value to observe
+        if(intersectionSize > 0)
+            canvas.drawCircle(intersectionCenterX, intersectionCenterY, cleaningRange, brushCleaning);
 
         // draw circle and path
         canvas.drawPath(path, brush);

@@ -1,11 +1,15 @@
 package com.example.movement_drawing;
 
 import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -17,8 +21,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -36,6 +43,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     // for log statements
     private static final String TAG = "MainActivity";
+
+    LocationManager locationManager;
+    BluetoothAdapter bluetoothAdapter;
+    Boolean gps_enabled = false;
+    Boolean bluetooth_enabled = false;
 
     private LinearLayout canvasLinearLayout;
     private PaintView paintView;
@@ -131,7 +143,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        requestPermissions(new String[] {Manifest.permission.ACCESS_COARSE_LOCATION}, 1234);
+
+        // permissions
+        if(ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {
+
+        }else {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+        }
+
+        // check location and bluetooth if they are turned on
+        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        try {
+            gps_enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+        bluetooth_enabled = bluetoothAdapter.isEnabled();
+
+        if(gps_enabled == false || bluetooth_enabled == false)
+        {
+            Toast.makeText(MainActivity.this, "Turn on GPS and Bluetooth", Toast.LENGTH_LONG).show();
+        }
 
         // initialize variables
         buttonLeftTop = findViewById(R.id.button_LeftTop);
@@ -195,9 +229,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 String buttonText = button_StartStop.getText().toString();
                 if(buttonText == textStart)
                 {
-                    button_StartStop.setBackgroundColor(colorStopScanning);
-                    button_StartStop.setText(textStop);
-                    startMonitoring();
+                    try {
+                        gps_enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                    } catch(Exception ex) {}
+                    bluetooth_enabled = bluetoothAdapter.isEnabled();
+
+                    if(bluetooth_enabled ==false || gps_enabled == false)
+                        Toast.makeText(MainActivity.this, "Turn on GPS and Bluetooth", Toast.LENGTH_LONG).show();
+                    else
+                    {
+                        button_StartStop.setBackgroundColor(colorStopScanning);
+                        button_StartStop.setText(textStop);
+                        startMonitoring();
+                    }
                 }
                 else if(buttonText == textStop)
                 {
@@ -207,6 +251,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
+    {
+        switch(requestCode)
+        {
+            case 1:
+                if(grantResults.length>0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    // we have permission
+                }else {
+                    // no permission, close the app later
+
+                }
+                return;
+        }
     }
 
     private void setOnClickListeners()
@@ -333,6 +395,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         catch(RemoteException e) {Log.d(TAG, "error on stop monitoring"); }
     }
 
+    // distance calculation from rssi and tx
     private double getDistanceForDevice(double tx, double rssi)
     {
         // not first out last in, just weird values are out

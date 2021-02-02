@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
@@ -16,7 +15,6 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Timer;
 
 // for test cases
 // with timer user will be moving at 1m/s
@@ -38,6 +36,7 @@ public class PaintView extends View {
     private Paint brushBeaconRadius = new Paint();
     private Paint brushIntersections = new Paint();
     private Paint brushBeaconRegion = new Paint();
+    private Paint brushCleaning = new Paint();          // will be deleted, test for now
     private int iconRadius = 10;
 
     private float pointX;
@@ -82,13 +81,13 @@ public class PaintView extends View {
     private ArrayList<Float> beaconCircles_XPoints = new ArrayList<Float>();
     private ArrayList<Float> beaconCircles_YPoints = new ArrayList<Float>();
     private ArrayList<Float> beaconCircles_RValues = new ArrayList<Float>();
-    private int scanPeriod = 5;     // draw circle once in every period
-    private int scanCheck = 0;
+    private float scanPeriod = 5;     // draw circle once in every period
+    private float scanCheck = 0;
 
     // these lists are for determining better beacon circles
-    private ArrayList<Float> topAverage_RValues = new ArrayList<Float>();
-    private ArrayList<Float> topAverage_XPoints = new ArrayList<Float>();
-    private ArrayList<Float> topAverage_YPoints = new ArrayList<Float>();
+    private ArrayList<Float> average_RValues = new ArrayList<Float>();
+    private ArrayList<Float> average_XPoints = new ArrayList<Float>();
+    private ArrayList<Float> average_YPoints = new ArrayList<Float>();
     private int topAverageRange = 2;            // take top 2 points for avg
 
     // centroid positioning system parameters
@@ -99,12 +98,13 @@ public class PaintView extends View {
     private float intersectionTotalY = 0;
     private float intersectionCenterX = 0;
     private float intersectionCenterY = 0;
-    private float beaconRegionR = 2;
+    private float beaconRegionR = 2.5f;
     // deleting some of the intersection points, furthest point for better accuracy
     private Boolean checkIntersectionClean = false;
     private int cleanStartSize = 10;
-    private float furthestPointsRange = 20;      // in % values
+    private float furtherRange = 30;                // furthest 20 percent points
     private float intersectionFurthestDistance;
+    private float furtherBoundary;
 
     // constructor of the class here
     public PaintView(Context context) {
@@ -155,6 +155,13 @@ public class PaintView extends View {
         brushBeaconRegion.setStrokeJoin(Paint.Join.ROUND);
         brushBeaconRegion.setStrokeCap(Paint.Cap.ROUND);
         brushBeaconRegion.setStrokeWidth(0f);
+
+        brushCleaning.setAntiAlias(true);
+        brushCleaning.setColor(getResources().getColor(R.color.colorBeaconRegion));
+        brushCleaning.setStyle(Paint.Style.STROKE);
+        brushCleaning.setStrokeJoin(Paint.Join.ROUND);
+        brushCleaning.setStrokeCap(Paint.Cap.ROUND);
+        brushCleaning.setStrokeWidth(20f);
 
 
         // layout settings
@@ -255,54 +262,52 @@ public class PaintView extends View {
         }
 
         // INTERSECTION POINTS
-        intersectionTotalX = 0;
-        intersectionTotalY = 0;
-        float intersectionSize = intersection_XPoints.size();
-        for(int i=0; i<intersection_XPoints.size(); i++)
+        intersectionTotalX = 0f;
+        intersectionTotalY = 0f;
+        int intersectionSize = intersection_XPoints.size();
+        if(intersectionSize > 0)
         {
-            float interX = intersection_XPoints.get(i);
-            float interY = intersection_YPoints.get(i);
-            canvas.drawCircle(interX, interY, intersectionRadius, brushIntersections);
-            intersectionTotalX += interX;
-            intersectionTotalY += interY;
+            for(int i=0; i<intersection_XPoints.size(); i++)
+            {
+                float interX = intersection_XPoints.get(i);
+                float interY = intersection_YPoints.get(i);
+                canvas.drawCircle(interX, interY, intersectionRadius, brushIntersections);
+                intersectionTotalX += interX;
+                intersectionTotalY += interY;
+            }
+            intersectionCenterX = intersectionTotalX/((float)intersectionSize);
+            intersectionCenterY = intersectionTotalY/((float)intersectionSize);
         }
-        intersectionCenterX = intersectionTotalX/intersectionSize;
-        intersectionCenterY = intersectionTotalY/intersectionSize;
 
+        /*
         // INTERSECTION CLEANING
-        intersectionFurthestDistance = 0;
-        ArrayList<Float> intersectionDistances = new ArrayList<Float>();
         if((checkIntersectionClean == true) && (intersectionSize > cleanStartSize))
         {
+            intersectionFurthestDistance = 0;
+            ArrayList<Float> intersectionDistances = new ArrayList<Float>();
+            checkIntersectionClean = false;
             // first find furthest intersection point distance
             for(int i=0; i<intersection_XPoints.size(); i++)
             {
                 float interX = intersection_XPoints.get(i);
                 float interY = intersection_YPoints.get(i);
-                float xDiffSquare = (float)Math.pow((interX-intersectionCenterX), 2);
-                float yDiffSquare = (float)Math.pow((interY-intersectionCenterY), 2);
-                float dis = (float)Math.sqrt(xDiffSquare + yDiffSquare);
-                intersectionDistances.add(dis);
+                double xDiffSquare = Math.pow((interX-intersectionCenterX), 2);
+                double yDiffSquare = Math.pow((interY-intersectionCenterY), 2);
+                double dis = Math.sqrt(xDiffSquare + yDiffSquare);
+
+                intersectionDistances.add((float)dis);
                 if(dis > intersectionFurthestDistance)
                 {
-                    intersectionFurthestDistance = dis;
+                    intersectionFurthestDistance = (float)dis;
                 }
             }
-            // remove 20% furthest points, 20 can change
-            float boundaryPointDis = ((100-furthestPointsRange)/100) * intersectionFurthestDistance;
-            for(int r=0; r<intersection_XPoints.size(); r++)
-            {
-                if(intersectionDistances.get(r) > boundaryPointDis)
-                {
-                    intersection_XPoints.remove(r);
-                    intersection_YPoints.remove(r);
-                }
-            }
-            Log.d(TAG, "CLEANING AFTER " + boundaryPointDis/pixelPerMeter + " METERS");
         }
+         */
 
-        // draw red beacon region for testing
-        canvas.drawCircle(intersectionCenterX, intersectionCenterY, beaconRegionR, brushBeaconRegion);
+        // draw red beacon region
+        if(intersection_XPoints.size()>0)
+            canvas.drawCircle(intersectionCenterX, intersectionCenterY, beaconRegionR, brushBeaconRegion);
+
 
         // draw circle and path
         canvas.drawPath(path, brush);
@@ -355,50 +360,29 @@ public class PaintView extends View {
             // run once in every scanPeriod
             // take top 2 values from the measurements and draw circle
             scanCheck++;
-            topAverage_RValues.add(beaconRadius);
-            topAverage_XPoints.add(pointX);
-            topAverage_YPoints.add(pointY);
+            average_RValues.add(beaconRadius);
+            average_XPoints.add(pointX);
+            average_YPoints.add(pointY);
             if(scanCheck != scanPeriod)
                return;
             else
             {
-                // try normal average as well
-
-                scanCheck = 0;
-                // look for the top 2 values in topAverage lists
-                for(int i=0; i<topAverageRange; i++)
+                scanCheck = 0f;
+                for(int i=0; i<average_XPoints.size(); i++)
                 {
-                    float topValueR = topAverage_RValues.get(0);
-                    float topPointX, topPointY;
-                    for(float r: topAverage_RValues)
-                    {
-                        if(r > topValueR)
-                        {
-                            topValueR = r;
-                        }
-                    }
-                    int topIndex = topAverage_RValues.indexOf(topValueR);
-                    topPointX = topAverage_XPoints.get(topIndex);
-                    topPointY = topAverage_YPoints.get(topIndex);
-                    topAverageR += topValueR;
-                    topAverageX += topPointX;
-                    topAverageY += topPointY;
-                    topAverage_RValues.remove(topIndex);
-                    topAverage_XPoints.remove(topIndex);
-                    topAverage_YPoints.remove(topIndex);
+                    topAverageX += average_XPoints.get(i);
+                    topAverageY += average_YPoints.get(i);
+                    topAverageR += average_RValues.get(i);
                 }
-                // find topAverage R, x and y points, 2 will change
-                topAverageR = topAverageR / topAverageRange;
-                topAverageX = topAverageX / topAverageRange;
-                topAverageY = topAverageY / topAverageRange;
-
+                topAverageX = topAverageX/scanPeriod;
+                topAverageY = topAverageY/scanPeriod;
+                topAverageR = topAverageR/scanPeriod;
 
                 // clear lists the second period
-                topAverage_RValues.clear();
-                topAverage_XPoints.clear();
-                topAverage_YPoints.clear();
+                average_RValues.clear();
+                average_XPoints.clear();
+                average_YPoints.clear();
             }
-
 
             // if you are just standing, don't draw circles yet
             if(beaconCircles_XPoints.size() > 0)
@@ -414,7 +398,6 @@ public class PaintView extends View {
             // later we gonna use normal average values
             if(beaconCircles_RValues.size() > 0)
             {
-                Log.d(TAG, "NEW CIRCLE");
                 for(int i=0; i<beaconCircles_RValues.size(); i++)
                 {
                     // check for the intersection at first
@@ -427,18 +410,13 @@ public class PaintView extends View {
                     if(circleDistance <= (topAverageR+compareCircleR))
                     {
                         // when there is an intersection
-                        if(circleDistance < Math.abs(topAverageR-compareCircleR))
-                        {
-                            // one circle is in another, special condition
-
-                        }
-                        else if(circleDistance != 0)
+                        if(circleDistance != 0)
                         {
                             // 2 intersection points
                             double d = circleDistance;
                             double a = ( (Math.pow(compareCircleR,2)) - (Math.pow(topAverageR,2))
                                         + (Math.pow(d, 2)) ) / (d * 2);
-                            double h = Math.sqrt( (Math.pow(compareCircleR, 2)) - Math.pow(a, 2) );
+                            double h = Math.sqrt((Math.pow(compareCircleR, 2)) - Math.pow(a, 2));
                             double xcenter = compareCircleX + ( (a *(topAverageX-compareCircleX)) / d);
                             double ycenter = compareCircleY + ( (a *(topAverageY-compareCircleY)) / d);
 
@@ -449,23 +427,15 @@ public class PaintView extends View {
                             // intersection point2
                             double interX2 = xcenter - ((h*(topAverageY-compareCircleY)) / d);
                             double interY2 = ycenter + ((h*(topAverageX-compareCircleX)) / d);
-                            intersection_XPoints.add((float)interX1);
-                            intersection_YPoints.add((float)interY1);
-                            intersection_XPoints.add((float)interX2);
-                            intersection_YPoints.add((float)interY2);
 
+                            if(!Double.isNaN(interX1))
+                            {
+                                intersection_XPoints.add((float)interX1);
+                                intersection_YPoints.add((float)interY1);
+                                intersection_XPoints.add((float)interX2);
+                                intersection_YPoints.add((float)interY2);
+                            }
                             checkIntersectionClean = true;
-                            // test log
-                            /*
-                            Log.d(TAG, "CIRCLES");
-                            Log.d(TAG, "circle0 x" + compareCircleX + " circle0 y: " + compareCircleY
-                                    + " circle0 r: " + compareCircleR);
-                            Log.d(TAG, "circle1 x" + topAverageX + " circle1 y: " + topAverageY
-                                    + " circle0 1: " + topAverageR);
-                            Log.d(TAG, "INTERSECTIONS");
-                            Log.d(TAG, "interX1: " + interX1 + " interY1: " + interY1);
-                            Log.d(TAG, "interX2: " + interY2 + " interY2: " + interY2);
-                             */
                         }
                     }
                 }
@@ -742,3 +712,33 @@ public class PaintView extends View {
         }
     }
      */
+
+
+// look for the top 2 values in topAverage lists
+/*
+for(int i=0; i<topAverageRange; i++)
+{
+    float topValueR = average_RValues.get(0);
+    float topPointX, topPointY;
+    for(float r: average_RValues)
+    {
+        if(r > topValueR)
+        {
+            topValueR = r;
+        }
+    }
+    int topIndex = average_RValues.indexOf(topValueR);
+    topPointX = average_XPoints.get(topIndex);
+    topPointY = average_YPoints.get(topIndex);
+    topAverageR += topValueR;
+    topAverageX += topPointX;
+    topAverageY += topPointY;
+    average_RValues.remove(topIndex);
+    average_XPoints.remove(topIndex);
+    average_YPoints.remove(topIndex);
+}
+// find topAverage R, x and y points, 2 will change
+topAverageR = topAverageR / topAverageRange;
+topAverageX = topAverageX / topAverageRange;
+topAverageY = topAverageY / topAverageRange;
+*/

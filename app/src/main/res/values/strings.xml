@@ -3,4 +3,5 @@
     <string name="default_scale_text">&lt; --- 20 METERS --- &gt;</string>
     <string name="start_scanning">Start\nScanning</string>
     <string name="stop_scanning">Stop\nScanning</string>
+    <string name="app_name2">Beacon-Project</string>
 </resources>

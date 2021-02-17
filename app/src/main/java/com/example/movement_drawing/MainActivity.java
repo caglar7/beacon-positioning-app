@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager sensorManager;
     private Sensor detectSensor;
     private boolean moving;
-    private float rangeMin = .64f;
+    private float rangeMin = .67f;
     private float rangeMax = .76f;
 
     // BEACON VARIABLES

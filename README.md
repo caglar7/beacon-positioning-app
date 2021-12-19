@@ -21,5 +21,7 @@ rectangular path. There is an accumulation on the right but slightly less compar
 
 <img src="images/image2.png" height="250"> <img src="images/image3.png" height="250"> <img src="images/image4.png" height="250"> 
 
+For the test cases below, green circles are added to show real positions of beacons. While carrying the mobile device and scanning for the beacon to create circles, red circle is updated every time a circle added from a virtual reference point.
+
 
 

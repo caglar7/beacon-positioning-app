@@ -29,10 +29,8 @@ For the test cases below, green circles are added to show real positions of beac
 https://kontakt.io/what-is-a-beacon/
 https://www.novelbits.io/overview-bluetooth-beacons-part-1/
 https://altbeacon.github.io/android-beacon-library/distance-calculations.html
-https://www.scientificamerican.com/article/bring-science-home-estimating-heightwalk/#:~:text=On%20average%2C%20adults%20have%20a,from%20about%200.41%20to%200.45).
+https://www.scientificamerican.com/article/bring-science-home-estimating-height-walk/#:~:text=On%20average%2C%20adults%20have%20a,from%20about%200.41%20to%
 https://stackoverflow.com/questions/3349125/circle-circle-intersection-points
-http://paulbourke.net/geometry/circlesphere/
-
 
 
 

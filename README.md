@@ -6,4 +6,12 @@ Indoor positioning is still a developing field and BLE (Bluetooth Low Energy) be
 Nonetheless, there are solutions that improves the accuracy of positioning such as triangulation. BLE beacons can be considered as reference points to track an asset (mostly a 
 mobile device). More the reference points, better the position accuracy of an asset. In this project, a reverse engineering method will be discussed. Which is “Can we apply the same principle to track and find locations of beacons using our mobile devices?”.
 
+## **PROBLEM DEFINITION**
+Indoor positioning is usually applied to scan and track the Bluetooth assets within an environment. Beacons are used in this manner as reference points estimating the distance 
+from each beacon for a certain asset. In this project, this concept is used to do the opposite which is scanning for beacon positions in an establishment. This can also be called as reverse engineering. 
+
+## **PROCEDURE**
+To scan and work with beacons, an open source library will be added to the project which is Android Beacon Library. In the gradle scripts of the project, adding the android beacon 
+implementation in the dependencies will synchronize the project and will add the library. As observed on the image at left, green circles are added on the image to simulate measurement positions. At that points, distance estimations are done for a beacon in the area. Initially, every one of these green points create beacon circles but these circles and corresponding positions are averaged to create one reference point at that position.
+
 

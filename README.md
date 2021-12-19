@@ -21,7 +21,9 @@ rectangular path. There is an accumulation on the right but slightly less compar
 
 <img src="images/image2.png" height="250"> <img src="images/image3.png" height="250"> <img src="images/image4.png" height="250"> 
 
-For the test cases below, green circles are added to show real positions of beacons. While carrying the mobile device and scanning for the beacon to create circles, red circle is updated every time a circle added from a virtual reference point.
+For the test cases below, green circles are added to show real positions of beacons. While carrying the mobile device and scanning for the beacon to create circles, red circle is updated every time a circle added from a virtual reference point. On the image 15, a beacon is placed on the center similar to the cases before and the red circle is at the same position with the green circle that is an accurate estimation for average coordinates. On the image 16, a path that looks like a T shape is travelled and a beacon is placed at top point of T shaped area as shown by the green circle. Red circle was far from the green circle by 3-4 meters. On the image 17, a beacon is placed over 2 meters from ground at the shown position and the estimated position was again shifted by 3-5 meters denoting a position above the green circle.
+
+<img src="images/image5.png" height="250"> <img src="images/image6.png" height="250"> <img src="images/image7.png" height="250"> 
 
 
 

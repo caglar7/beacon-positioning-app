@@ -18,5 +18,7 @@ implementation in the dependencies will synchronize the project and will add the
 
 Every time a circle is created from a virtual reference point. All the values about the circle is recorded that are center position and radius. These are all the information needed to draw circles. Every time a new circle is recorded, the code checks every one of the previous circles to find intersection points.
 
+<img src="images/image2.png" height="250"> <img src="images/image3.png" height="250"> <img src="images/image4.png" height="250"> 
+
 
 

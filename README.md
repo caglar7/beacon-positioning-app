@@ -14,4 +14,9 @@ from each beacon for a certain asset. In this project, this concept is used to d
 To scan and work with beacons, an open source library will be added to the project which is Android Beacon Library. In the gradle scripts of the project, adding the android beacon 
 implementation in the dependencies will synchronize the project and will add the library. As observed on the image at left, green circles are added on the image to simulate measurement positions. At that points, distance estimations are done for a beacon in the area. Initially, every one of these green points create beacon circles but these circles and corresponding positions are averaged to create one reference point at that position.
 
+<img src="images/image1.png" height="250">
+
+Every time a circle is created from a virtual reference point. All the values about the circle is recorded that are center position and radius. These are all the information needed to draw circles. Every time a new circle is recorded, the code checks every one of the previous circles to find intersection points.
+
+
 

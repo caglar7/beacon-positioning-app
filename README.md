@@ -16,7 +16,10 @@ implementation in the dependencies will synchronize the project and will add the
 
 <img src="images/image1.png" height="250">
 
-Every time a circle is created from a virtual reference point. All the values about the circle is recorded that are center position and radius. These are all the information needed to draw circles. Every time a new circle is recorded, the code checks every one of the previous circles to find intersection points.
+Every time a circle is created from a virtual reference point. All the values about the circle is recorded that are center position and radius. These are all the information needed to draw circles. Every time a new circle is recorded, the code checks every one of the previous circles to find intersection points. On the images below, intersection points of the circles are drawn. On the image 12, a beacon is placed at the center and a rectangular movement is done around the beacon (having mobile device on hand) and there is an accumulation of intersection points on the center position. On the image 13, a beacon is placed to the left and a rectangular movement is done. This time the beacon was outside to the left of the rectangular path. There is an accumulation observed on the left. Opposite case for the image 14 where a beacon is placed outside to the right of the 
+rectangular path. There is an accumulation on the right but slightly less compared to the other ones.
+
+<img src="images/image2.png" height="250"> <img src="images/image3.png" height="250"> <img src="images/image4.png" height="250"> 
 
 
 
